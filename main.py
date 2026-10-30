@@ -149,7 +149,7 @@ def login(datos: LoginRequest):
 
 
 @app.get("/ImagenesSlider")
-def imagenes_slider():
+def imagenes_slider(_: str = Depends(require_valid_token)):
     respuesta = [
 
         {
@@ -178,7 +178,7 @@ def imagenes_slider():
 
 
 @app.get("/ImagenesGaleria")
-def imagenes_galeria():
+def imagenes_galeria(_: str = Depends(require_valid_token)):
     respuesta = [
 
         {
@@ -211,7 +211,7 @@ def imagenes_galeria():
 
 
 @app.get("/ImagenesIOT")
-def imagenes_iot():
+def imagenes_iot(_: str = Depends(require_valid_token)):
     respuesta = [
         {
           "img": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTxhyVaxGAP1M9qb9x19hEZcKHEwWHueBmHV4i0Cud6Jvh8JaYAx_YSeZU&s=10",
