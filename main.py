@@ -4,8 +4,10 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
@@ -17,6 +19,32 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(_: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status": False,
+            "status_code": exc.status_code,
+            "detail": exc.detail,
+        },
+        headers=exc.headers,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "status": False,
+            "status_code": status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "detail": exc.errors(),
+        },
+    )
+
 
 sugerencias = []
 
@@ -111,14 +139,16 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+@app.get("/", status_code=status.HTTP_200_OK)
 def home():
     return {
-        "Mensaje": "Hola"
+        "status": True,
+        "status_code": status.HTTP_200_OK,
+        "Mensaje": "Hola",
     }
 
 
-@app.post("/login")
+@app.post("/login", status_code=status.HTTP_200_OK)
 def login(datos: LoginRequest):
     username, password, secret_key = get_auth_settings()
     valid_username = hmac.compare_digest(
@@ -142,75 +172,85 @@ def login(datos: LoginRequest):
         algorithm="HS256",
     )
     return {
+        "status": True,
+        "status_code": status.HTTP_200_OK,
         "access_token": access_token,
         "token_type": "bearer",
         "expires_in": expires_in,
     }
 
 
-@app.get("/ImagenesSlider")
+@app.get("/ImagenesSlider", status_code=status.HTTP_200_OK)
 def imagenes_slider(_: str = Depends(require_valid_token)):
     respuesta = [
 
-        {
+        { 
             "src": "https://static1.squarespace.com/static/521e95f4e4b01c5870ce81cf/t/55e6681fe4b05f924df365d8/1441163330952/?format=1500w",
             "alt": "Monitoreo agua",
-            "nombre": "Monitoreo de agua"
+            "nombre": "Monitoreo de agua" 
         },
-        {
+        { 
             "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKhz9M9tnfyZA9IiOMMwEsaYKJIHc1tl6VazjCwg0O08UHQ3GIwcSbP9k&s=10",
             "alt": "Fugas",
-            "nombre": "Detección de fugas"
+            "nombre": "Detección de fugas" 
         },
-        {
+        { 
             "src": "https://telemetrik.co/wp-content/uploads/2023/04/Sensores-de-nivel-e-IoT-la-clave-para-la-optimizacio%CC%81n-del-servicio-en-el-acueducto-de-Segovia-970x457.jpg",
             "alt": "Tanques",
-            "nombre": "Monitoreo de tanques"
+            "nombre": "Monitoreo de tanques" 
         },
-        {
+        { 
             "src": "https://i.pinimg.com/736x/37/f9/9e/37f99e422f151a5914f50d70673e9e3c.jpg",
             "alt": "Dashboard",
-            "nombre": "Panel de control"
+            "nombre": "Panel de control" 
         }
-
+        
     ]
-    return {"respuesta": respuesta}
+    return {
+        "status": True,
+        "status_code": status.HTTP_200_OK,
+        "respuesta": respuesta,
+    }
 
 
-@app.get("/ImagenesGaleria")
+@app.get("/ImagenesGaleria", status_code=status.HTTP_200_OK)
 def imagenes_galeria(_: str = Depends(require_valid_token)):
     respuesta = [
-
-        {
+        
+        { 
             "src": "https://www.tecpi.com.co/wp-content/uploads/2024/10/planta-aguas-tunja-veolia-tecpi-jpg.webp",
             "alt": "Estacion monitoreo",
-            "nombre": "Estacion de monitoreo"
+            "nombre": "Estacion de monitoreo" 
         },
-        {
+        {   
             "src": "https://medicionycontrol.com.co/wp-content/uploads/2022/11/Medidor-de-Flujo-tipos-y-caracteristicas-Medicion-y-Control.jpg",
             "alt": "Sensor caudal",
-            "nombre": "Sensor de caudal"
+            "nombre": "Sensor de caudal"  
         },
-        {
+        { 
             "src": "https://telemetrik.co/wp-content/uploads/2023/02/Monitoreo-del-nivel-del-agua-en-tiempo-real-con-tecnologi%CC%81a-IoT-Tablero-720x478.jpg",
-            "alt": "Panel IoT",
-            "nombre": "Panel de control IoT"
+            "alt": "Panel IoT", 
+            "nombre": "Panel de control IoT" 
         },
-        {
+        { 
             "src": "https://www.vanguardia.com/resizer/v2/oygukygfiu858257420230803172821jpg-WI7HRQMV7JHURPWWZOGHLYAQII.jpg?auth=533a63ad7d18f18038651678c61e1f2dc663e6f4b08791099d70d543d9e7f105&smart=true&width=1200&height=800&quality=70",
             "alt": "Tanque inteligente",
-            "nombre": "Tanque inteligente"
+            "nombre": "Tanque inteligente" 
         },
-        {
+        { 
             "src": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKhz9M9tnfyZA9IiOMMwEsaYKJIHc1tl6VazjCwg0O08UHQ3GIwcSbP9k&s=10",
             "alt": "Supervision tecnica",
-            "nombre": "Supervision tecnica"
+            "nombre": "Supervision tecnica" 
         }
     ]
-    return {"respuesta": respuesta}
+    return {
+        "status": True,
+        "status_code": status.HTTP_200_OK,
+        "respuesta": respuesta,
+    }
 
 
-@app.get("/ImagenesIOT")
+@app.get("/ImagenesIOT", status_code=status.HTTP_200_OK)
 def imagenes_iot(_: str = Depends(require_valid_token)):
     respuesta = [
         {
@@ -244,10 +284,13 @@ def imagenes_iot(_: str = Depends(require_valid_token)):
     ]
 
     return {
-        "respuesta" : respuesta
+        "status": True,
+        "status_code": status.HTTP_200_OK,
+        "respuesta": respuesta,
     }
 
-@app.post("/guardarSugerencia")
+
+@app.post("/guardarSugerencia", status_code=status.HTTP_201_CREATED)
 def guardar_sugerencia(
     datos: sugerencia, _: str = Depends(require_valid_token)
 ):
@@ -260,10 +303,17 @@ def guardar_sugerencia(
     }
     sugerencias.append(nueva)
     return {
+        "status": True,
+        "status_code": status.HTTP_201_CREATED,
         "Mensaje": "Sugerencia enviada con exito",
-        "Sugerencia": nueva
+        "Sugerencia": nueva,
     }
 
-@app.get("/obtenerSugerencias")
+
+@app.get("/obtenerSugerencias", status_code=status.HTTP_200_OK)
 def obtener_sugerencias(_: str = Depends(require_valid_token)):
-    return {"respuesta": sugerencias}
+    return {
+        "status": True,
+        "status_code": status.HTTP_200_OK,
+        "respuesta": sugerencias,
+    }
